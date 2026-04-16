@@ -6,7 +6,8 @@ app = Ursina()
 ground = Entity(
     model='plane',
     scale=(100,1,100),
-    texture='white_cube',
+    texture='brick',
+    color=color.gray,
     texture_scale=(100,100),
     collider='box')
 

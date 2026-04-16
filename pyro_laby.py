@@ -27,10 +27,11 @@ background = Entity(
 )
 
 title = Text(
-    "Pyromane Labyrinthe",
+    "Pyromaniac's Labyrinth : GOTY Edition",
     parent=menu,
     y=0.3,
     scale=3,
+    font='Comic Sans MS',
     color=color.red,
     origin=(0, 0),
     z=0

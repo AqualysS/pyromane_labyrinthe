@@ -31,7 +31,7 @@ title = Text(
     parent=menu,
     y=0.3,
     scale=3,
-    font='Comic Sans MS',
+    font='VeraMono.ttf',
     color=color.red,
     origin=(0, 0),
     z=0
@@ -72,6 +72,6 @@ def input(key):
         else:
             menu.enabled = True
             player.enabled = False
-            mouse.locked = False
+            mouse.locked = False   
 
 app.run()

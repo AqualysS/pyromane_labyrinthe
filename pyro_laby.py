@@ -11,8 +11,66 @@ ground = Entity(
     collider='box')
 
 player = FirstPersonController()
+player.enabled = False
 
 DirectionalLight()
 AmbientLight()
+
+menu = Entity(parent=camera.ui)
+
+background = Entity(
+    parent=menu,
+    model='quad',
+    scale=(2, 1),
+    color=color.rgba(0, 0, 0, 230),
+    z=1  
+)
+
+title = Text(
+    "Pyromane Labyrinthe",
+    parent=menu,
+    y=0.3,
+    scale=3,
+    color=color.red,
+    origin=(0, 0),
+    z=0
+)
+
+def create_button(text, y, action):
+    return Button(
+        text=text,
+        parent=menu,
+        y=y,
+        scale=(0.4, 0.1),
+        color=color.rgb(40,40,40),
+        highlight_color=color.rgb(0,150,255),
+        pressed_color=color.rgb(0,100,200),
+        text_color=color.black,
+        z=0, 
+        on_click=action
+    )
+
+def start_game():
+    menu.enabled = False
+    player.enabled = True
+    mouse.locked = True
+
+def quit_game():
+    application.quit()
+
+btn_play = create_button("JOUER", 0.1, start_game)
+btn_options = create_button("OPTIONS", -0.05, lambda: print("Options"))
+btn_quit = create_button("QUITTER", -0.2, quit_game)
+
+def input(key):
+    if key == 'escape':
+        if menu.enabled:
+            menu.enabled = False
+            player.enabled = True
+            mouse.locked = True
+        else:
+            menu.enabled = True
+            player.enabled = False
+            mouse.locked = False
 
 app.run()

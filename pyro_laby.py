@@ -23,7 +23,7 @@ background = Entity(
     parent=menu,
     model='quad',
     scale=(2, 1),
-    color=color.gray,
+    color=color.dark_gray,
     z=1  
 )
 

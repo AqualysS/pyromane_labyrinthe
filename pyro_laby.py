@@ -10,7 +10,7 @@ ground = Entity(
     texture_scale=(100,100),
     collider='box')
 
-player = FirstPersonController()
+player = FirstPersonController(speed=8, collider='box')
 player.enabled = False
 
 DirectionalLight()
@@ -73,5 +73,11 @@ def input(key):
             menu.enabled = True
             player.enabled = False
             mouse.locked = False   
+
+def jump(key):
+    if key == 'space':
+        player.y = 5
+    else:
+        player.y = 0
 
 app.run()

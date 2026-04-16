@@ -1,6 +1,7 @@
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 
+
 app = Ursina()
 
 ground = Entity(
@@ -22,7 +23,7 @@ background = Entity(
     parent=menu,
     model='quad',
     scale=(2, 1),
-    color=color.rgba(0, 0, 0, 230),
+    color=color.gray,
     z=1  
 )
 

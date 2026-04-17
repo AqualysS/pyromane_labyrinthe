@@ -32,7 +32,7 @@ title = Text(
     parent=menu,
     y=0.3,
     scale=3,
-    #font='VeraMono.ttf',
+    font='VeraMono.ttf',
     color=color.red,
     origin=(0, 0),
     z=0
@@ -80,5 +80,13 @@ def jump(key):
         player.y = 5
     else:
         player.y = 0
+
+def update():
+    if held_keys['g']:
+        camera.y = lerp(camera.y, 0.5, time.dt * 10)
+        player.speed = 4
+    else:
+        camera.y = lerp(camera.y, 1, time.dt * 10)
+        player.speed = 8
 
 app.run()

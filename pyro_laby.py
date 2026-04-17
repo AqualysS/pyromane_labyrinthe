@@ -32,7 +32,7 @@ title = Text(
     parent=menu,
     y=0.3,
     scale=3,
-    font='VeraMono.ttf',
+    #font='VeraMono.ttf',
     color=color.red,
     origin=(0, 0),
     z=0
@@ -44,10 +44,10 @@ def create_button(text, y, action):
         parent=menu,
         y=y,
         scale=(0.4, 0.1),
-        color=color.rgb(40,40,40),
-        highlight_color=color.rgb(0,150,255),
+        color="#FFD429",
+        highlight_color=color.orange,
         pressed_color=color.rgb(0,100,200),
-        text_color=color.black,
+        text_color=color.rgb(139,0,0),
         z=0, 
         on_click=action
     )

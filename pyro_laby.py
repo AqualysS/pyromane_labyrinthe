@@ -16,7 +16,17 @@ player = FirstPersonController(speed=8, collider='box')
 player.enabled = False
 
 stamina = 100
-txt = Text(text="Stamina: 100", position=(-0.85, 0.45), scale=2)
+
+stamina_bar = Entity(
+    parent=camera.ui,
+    model='quad',
+    color="#FFD429",
+    scale=(0.4, 0.05),
+    x=-0.81,
+    y=0.35,
+    z=1.01,
+    origin=(-0.4)
+)
 
 DirectionalLight()
 AmbientLight()
@@ -36,7 +46,6 @@ title = Text(
     parent=menu,
     y=0.3,
     scale=3,
-    font='VeraMono.ttf',
     color=color.red,
     origin=(0,0),
     z=0
@@ -59,12 +68,12 @@ def start_game():
     menu.enabled = False
     player.enabled = True
     mouse.locked = True
-    txt.enabled = True
+    
 
 def quit_game():
     application.quit()
 
-txt.enabled = False
+
 
 create_button("JOUER", 0.1, start_game)
 create_button("OPTIONS", -0.05, lambda: print("Options"))
@@ -88,6 +97,9 @@ def jump(key):
         player.y = 5
     else:
         player.y = 0
+
+def stam_update():
+    stamina_bar.scale_x = 0.4 * stamina / 100
 
 def update():
     global stamina
@@ -114,6 +126,7 @@ def update():
         stamina = 0
         player.speed = 8
 
-    txt.text = "Stamina: " + str(int(stamina))
+    stam_update()
+
 
 app.run()

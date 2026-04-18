@@ -98,6 +98,7 @@ def update():
     if held_keys['g']:
         camera.y = lerp(camera.y, 0.5, time.dt * 10)
         player.speed = 4
+        stamina += 15 * time.dt
 
     elif held_keys['left shift'] and can_sprint:
         camera.y = lerp(camera.y, 1, time.dt * 10)
@@ -107,7 +108,7 @@ def update():
     else:
         camera.y = lerp(camera.y, 1, time.dt * 10)
         player.speed = 8
-        stamina += 15 * time.dt
+        stamina += 10 * time.dt
 
     if stamina <= 0:
         stamina = 0

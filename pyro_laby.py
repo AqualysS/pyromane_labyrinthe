@@ -126,7 +126,7 @@ def update():
         if held_keys['g']:  # marche lente si la touche 'g' est appuyée
             player.speed = 4
             camera.y = lerp(camera.y, 0.5, time.dt * 10)
-            stamina += 15 * time.dt
+            stamina += 20 * time.dt
 
         elif held_keys['left shift'] and stamina > 0: # sprint si shift gauche est maintenu et qu'il reste de l'endurance
             player.speed = 15

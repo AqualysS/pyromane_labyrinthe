@@ -78,7 +78,7 @@ def create_button(txt, y, action):
         scale=(0.4,0.1), # dimensions du bouton
         color=color.yellow, # couleur de base du bouton
         highlight_color=color.orange, # couleur quand le bouton est survolé
-        pressed_color=color.azure, # couleur quand le bouton est cliqué
+        pressed_color=color.gray, # couleur quand le bouton est cliqué
         text_color=color.red, # couleur du texte du bouton
         on_click=action # fonction appelée au clic
     )

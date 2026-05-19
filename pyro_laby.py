@@ -1,14 +1,20 @@
 from ursina import *
-from ursina.prefabs.first_person_controller import FirstPersonController
+from ursina.prefabs.first_person_controller import *
 import random
+import json
+import os
 
 app = Ursina()
 
+# MAP CONFIG
+
+camera.fov = 90
+
 ground = Entity(
     model='plane',
-    scale=(1000,1,1000),
+    scale=(1000, 1, 1000),
     texture='brick',
-    texture_scale=(1000,1000),
+    texture_scale=(1000, 1000),
     color=color.gray,
     collider='box'
 )
@@ -16,28 +22,97 @@ ground = Entity(
 DirectionalLight()
 AmbientLight()
 
+# PARAMETRES DU JOUEUR
+
+player = Entity(
+    model='cube',
+    collider='box',
+    color=color.clear,
+    position=(0, 2, 0)
+)
+
+camera.parent = player
+camera.position = (0, 1.6, 0)
+
+controls = {
+    "forward": "w",
+    "back": "s",
+    "left": "a",
+    "right": "d",
+    "jump": "space",
+    "sprint": "left shift",
+    "crouch": "g"
+}
+
+# SAVAUGARDE DES PARAMETRES
+
+settings_file = 'settings.json'
+
+default_settings = {
+    "volume": 1,
+    "controls": controls,
+}
+
+def save_settings():
+    settings = {
+        "volume": volume_slider.value,
+        "controls": controls,
+        "music_muted": music_muted
+    }
+
+    with open(settings_file, 'w') as f:
+        json.dump(settings, f, indent=4)
+
+def load_settings():
+    global controls
+    global music_muted
+    global last_volume
+
+    if os.path.exists(settings_file):
+        with open(settings_file, 'r') as f:
+            settings = json.load(f)
+
+            controls.update(settings.get("controls", {}))
+
+            volume = settings.get("volume", 1)
+
+            volume_slider.value = volume
+            last_volume = volume
+
+            music_muted = settings.get("music_muted", False)
+
+            if music_muted:
+                musique_menu.volume = 0
+                mute_button.text = "UNMUTE"
+            else:
+                musique_menu.volume = volume
+                mute_button.text = "MUTE"
+
+# AUDIO
+
 musique_menu = Audio('sounds/musique/epic_music.mp3', loop=True, autoplay=True)
 
-player = FirstPersonController(speed=8, collider='box')
-player.enabled = False
+music_muted = False
+last_volume = 1
+
+# STAMINA CONFIG
 
 stamina = 100
 display_stamina = 100
 
-height = 30
-width = 40
-
 stamina_bar = Entity(
     parent=camera.ui,
     model='quad',
-    scale=(0.4,0.05),
+    scale=(0.4, 0.05),
     x=-0.8,
     y=0.42,
-    origin=(-0.5,0),
+    origin=(-0.5, 0),
     color=color.lime
 )
 
 stamina_bar.enabled = False
+
+# MENUS
 
 main_menu = Entity(parent=camera.ui)
 options_menu_ui = Entity(parent=camera.ui, enabled=False)
@@ -49,8 +124,8 @@ controles_menu_ui = Entity(parent=camera.ui, enabled=False)
 main_background = Entity(
     parent=main_menu,
     model='quad',
-    texture = 'assets/menu.png',
-    scale=(2,1),
+    texture='assets/menu.png',
+    scale=(2, 1),
     color=color.dark_gray,
     z=1
 )
@@ -61,7 +136,7 @@ title = Text(
     y=0.3,
     scale=2.5,
     color=color.red,
-    origin=(0,0)
+    origin=(0, 0)
 )
 
 # MENU OPTIONS
@@ -69,7 +144,7 @@ title = Text(
 options_background = Entity(
     parent=options_menu_ui,
     model='quad',
-    scale=(2,1),
+    scale=(2, 1),
     color=color.black66,
     z=1
 )
@@ -80,7 +155,7 @@ options_title = Text(
     y=0.3,
     scale=2,
     color=color.azure,
-    origin=(0,0)
+    origin=(0, 0)
 )
 
 # MENU AUDIO
@@ -88,7 +163,7 @@ options_title = Text(
 audio_background = Entity(
     parent=audio_menu_ui,
     model='quad',
-    scale=(2,1),
+    scale=(2, 1),
     color=color.black66,
     z=1
 )
@@ -99,10 +174,8 @@ audio_title = Text(
     y=0.3,
     scale=2,
     color=color.azure,
-    origin=(0,0)
+    origin=(0, 0)
 )
-
-# SLIDER VOLUME
 
 volume_text = Text(
     text="Volume",
@@ -123,48 +196,129 @@ volume_slider = Slider(
     scale=1
 )
 
-music_muted = False
+# PARAMETRES DU JEU
+
+height = 30
+width = 40
+
+speed = 8
+sprint_speed = 15
+gravity = 1
+player_velocity_y = 0
+stand_height = 1.6
+crouch_height = 1.0
+
+# REGLAGES AUDIO
 
 def toggle_music():
-    global music_muted
+    global music_muted, last_volume
 
     if not music_muted:
+        last_volume = volume_slider.value
         musique_menu.volume = 0
-        volume_slider.value = 0
         mute_button.text = "UNMUTE"
         music_muted = True
-
     else:
-        musique_menu.volume = 1
-        volume_slider.value = 1
+        musique_menu.volume = last_volume
         mute_button.text = "MUTE"
         music_muted = False
+
+    save_settings()
+
 
 mute_button = Button(
     text="MUTE",
     parent=audio_menu_ui,
     y=-0.15,
-    scale=(0.3,0.1),
+    scale=(0.3, 0.1),
     color=color.red,
     highlight_color=color.orange,
     pressed_color=color.gray,
     on_click=toggle_music
 )
 
+def on_slider_change():
+    if not music_muted:
+        musique_menu.volume = volume_slider.value
+
+    save_settings()
+
+volume_slider.on_value_changed = on_slider_change
+
+# MENU CONTROLES
+
+rebinding_action = None
+ignorer_premiere_entree = False
+
+def create_control_row(parent, action_name, display_name, y):
+
+    Text(
+        text=display_name,
+        parent=parent,
+        x=-0.3,
+        y=y,
+        scale=1.2,
+        font='VeraMono.ttf'
+    )
+
+    key_text = Text(
+        text=controls[action_name],
+        parent=parent,
+        x=0,
+        y=y,
+        scale=1.2,
+        color=color.azure,
+        font='VeraMono.ttf'
+    )
+
+    def change_key():
+        global rebinding_action, ignorer_premiere_entree
+
+        rebinding_action = (action_name, key_text)
+        key_text.text = "..."
+
+        ignorer_premiere_entree = True
+
+    Button(
+        text="Changer",
+        text_color=color.red,
+        parent=parent,
+        x=0.35,
+        y=y,
+        scale=(0.15, 0.05),
+        color=color.yellow,
+        on_click=change_key
+    )
+
+def setup_controls_menu():
+    create_control_row(controles_menu_ui, "forward", "Avancer", 0.4)
+    create_control_row(controles_menu_ui, "back", "Reculer", 0.3)
+    create_control_row(controles_menu_ui, "left", "Gauche", 0.2)
+    create_control_row(controles_menu_ui, "right", "Droite", 0.1)
+    create_control_row(controles_menu_ui, "jump", "Saut", 0)
+    create_control_row(controles_menu_ui, "sprint", "Sprint", -0.1)
+    create_control_row(controles_menu_ui, "crouch", "Accroupir", -0.2)
+
+load_settings()
+setup_controls_menu()
+
+# MENU FUNCTIONS (IMPORTANTS)
+
 def start_game():
     main_menu.enabled = False
     options_menu_ui.enabled = False
 
     player.enabled = True
-    mouse.locked = True 
-
-    stamina_bar.enabled = True 
+    mouse.locked = True
+    stamina_bar.enabled = True
     ground.enabled = True
 
     musique_menu.volume = 0
 
+
 def quit_game():
     application.quit()
+
 
 def open_options():
     main_menu.enabled = False
@@ -173,6 +327,7 @@ def open_options():
     player.enabled = False
     mouse.locked = False
 
+
 def return_to_main_menu():
     options_menu_ui.enabled = False
     main_menu.enabled = True
@@ -180,19 +335,23 @@ def return_to_main_menu():
     player.enabled = False
     mouse.locked = False
 
+
 def open_audio_menu():
     options_menu_ui.enabled = False
     audio_menu_ui.enabled = True
 
+
 def return_to_options():
     audio_menu_ui.enabled = False
     options_menu_ui.enabled = True
+    controles_menu_ui.enabled = False
 
-def update_volume():
-    global music_muted
+def open_controls_menu():
+    options_menu_ui.enabled = False
+    controles_menu_ui.enabled = True
+    mouse.locked = False
 
-    if not music_muted:
-        musique_menu.volume = volume_slider.value
+# FONCTION BOUTTONS
 
 def create_button(parent, txt, y, action):
     btn = Button(
@@ -218,9 +377,6 @@ def create_button(parent, txt, y, action):
         btn.animate_scale(base_scale, duration=0.1)
         btn.animate_y(base_y, duration=0.1)
 
-    btn.on_mouse_enter = on_enter
-    btn.on_mouse_exit = on_exit
-
     def on_click():
         btn.animate_scale(base_scale * 0.95, duration=0.05)
         invoke(lambda: btn.animate_scale(base_scale * 1.1, duration=0.05), delay=0.05)
@@ -228,82 +384,133 @@ def create_button(parent, txt, y, action):
 
         action()
 
+    btn.on_mouse_enter = on_enter
+    btn.on_mouse_exit = on_exit
     btn.on_click = on_click
 
     return btn
+
+# CREATION DES BOUTONS
 
 create_button(main_menu, "JOUER", 0.1, start_game)
 create_button(main_menu, "OPTIONS", -0.05, open_options)
 create_button(main_menu, "QUITTER", -0.2, quit_game)
 
 create_button(options_menu_ui, "AUDIO", 0.1, open_audio_menu)
-create_button(options_menu_ui, "CONTROLES", -0.05, Func(print, "Controles"))
-create_button(options_menu_ui, "RETOUR", -0.2, return_to_main_menu) # retour menu principal
-create_button(audio_menu_ui, "RETOUR", -0.3, return_to_options) # retour menu options
+create_button(options_menu_ui, "CONTROLES", -0.05, open_controls_menu)
+create_button(options_menu_ui, "RETOUR", -0.2, return_to_main_menu)
+
+create_button(audio_menu_ui, "RETOUR", -0.3, return_to_options)
+create_button(controles_menu_ui, "RETOUR", -0.4, return_to_options)
 
 def input(key):
+    global player_velocity_y
+    global rebinding_action
+    global ignorer_premiere_entree
+
+    if player.enabled and key == controls["jump"] and player.y <= 2:
+        player_velocity_y = 8
+
+    if rebinding_action is not None:
+        action_name, key_text = rebinding_action
+
+        if ignorer_premiere_entree:
+            ignorer_premiere_entree = False
+            return
+
+        if key != 'escape':
+            if action_name in controls:
+                controls[action_name] = key
+                key_text.text = key
+                save_settings()
+
+        rebinding_action = None
+        return
+
     if key == 'escape':
         if main_menu.enabled:
             main_menu.enabled = False
             player.enabled = True
             mouse.locked = True
             stamina_bar.enabled = True
+            player_velocity_y = 0
         else:
             main_menu.enabled = True
             player.enabled = False
-            mouse.locked = False 
-            stamina_bar.enabled = False 
-    
+            mouse.locked = False
+            stamina_bar.enabled = False
+
+# STAMINA BAR
 
 def update_stamina_bar():
     global display_stamina
 
-    display_stamina = lerp(display_stamina, stamina, time.dt * 8) 
-    stamina_bar.scale_x = 0.4 * display_stamina / 100 
+    display_stamina = lerp(display_stamina, stamina, time.dt * 8)
+    stamina_bar.scale_x = 0.4 * display_stamina / 100
 
     if display_stamina > 60:
         stamina_bar.color = color.lime
-        stamina_bar.x = -0.8
-
     elif display_stamina > 30:
         stamina_bar.color = color.yellow
-        stamina_bar.x = -0.8
-
-    elif display_stamina > 10: 
+    elif display_stamina > 10:
         stamina_bar.color = color.orange
-        stamina_bar.x = -0.8
-
     else:
         stamina_bar.color = color.red
-        stamina_bar.x = -0.8 + random.uniform(-0.003,0.003)
+        stamina_bar.x = -0.8 + random.uniform(-0.003, 0.003)
+
+# LE JEU EN LUI MEME
 
 def update():
-    global stamina 
+    global stamina, player_velocity_y
 
-    stamina = clamp(stamina, 0, 100) 
+    stamina = clamp(stamina, 0, 100)
 
-    if player.enabled: 
+    if not player.enabled:
+        return
 
-        if held_keys['g']: 
-            player.speed = 4
-            camera.y = lerp(camera.y, 0.5, time.dt * 10)
-            stamina += 20 * time.dt
+    move = Vec3(0, 0, 0)
 
-        if held_keys['left shift'] and held_keys['w'] and stamina > 0:
-            player.speed = 15
-            camera.y = lerp(camera.y, 1, time.dt * 10)
-            stamina -= 25 * time.dt
-        
-        elif stamina < 0:
-            player.speed = 6
-            camera.y = lerp(camera.y, 1, time.dt * 10)
-        
-        else:
-            player.speed = 8
-            camera.y = lerp(camera.y, 1, time.dt * 10)
-            stamina += 10 * time.dt
+    if held_keys[controls["forward"]]:
+        move += camera.forward
+    if held_keys[controls["back"]]:
+        move -= camera.forward
+    if held_keys[controls["left"]]:
+        move -= camera.right
+    if held_keys[controls["right"]]:
+        move += camera.right
+
+    if held_keys[controls["crouch"]]:
+        camera.y = lerp(camera.y, crouch_height, time.dt * 10)
+        stamina += 20 * time.dt
+    else:
+        camera.y = lerp(camera.y, stand_height, time.dt * 10)
+
+    move.y = 0
+    move = move.normalized() if move.length() > 0 else move
+
+    player.rotation_y += mouse.velocity[0] * 100
+    camera.rotation_x -= mouse.velocity[1] * 100
+    camera.rotation_x = clamp(camera.rotation_x, -90, 90)
+
+    is_sprinting = held_keys[controls["sprint"]] and held_keys[controls["forward"]] and stamina > 0
+    current_speed = sprint_speed if is_sprinting else speed
+
+    player.position += move * current_speed * time.dt
+
+    if is_sprinting:
+        stamina -= 25 * time.dt
+    else:
+        stamina += 10 * time.dt
+
+    stamina = clamp(stamina, 0, 100)
+
+    player_velocity_y -= 25 * time.dt
+    player.y += player_velocity_y * time.dt
+
+    if player.y < 2:
+        player.y = 2
+        player_velocity_y = 0
 
     update_stamina_bar()
-    update_volume()
 
 app.run()

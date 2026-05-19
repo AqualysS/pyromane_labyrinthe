@@ -16,6 +16,8 @@ ground = Entity(
 DirectionalLight()
 AmbientLight()
 
+musique_menu = Audio('sounds/musique/epic_music.mp3', loop=True, autoplay=True)
+
 player = FirstPersonController(speed=8, collider='box')
 player.enabled = False
 
@@ -61,6 +63,7 @@ def start_game():
     player.enabled = True  # active le contrôleur du joueur pour commencer le jeu
     mouse.locked = True # verrouille la souris pour le mode première personne
     stamina_bar.enabled = True # affiche la barre d'endurance pendant le jeu
+    musique_menu.volume = 0
 
 def quit_game():
     application.quit() # quitte l'application immédiatement
@@ -97,9 +100,6 @@ def input(key):
             player.enabled = False # désactive le contrôle du joueur
             mouse.locked = False # libère la souris pour la navigation menu
             stamina_bar.enabled = False # cache la barre d'endurance
-
-def labyrinthe():
-
     
 
 def update_stamina_bar():

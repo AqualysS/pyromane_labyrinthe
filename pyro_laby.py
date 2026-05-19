@@ -92,6 +92,13 @@ def load_settings():
 
 musique_menu = Audio('sounds/musique/epic_music.mp3', loop=True, autoplay=True)
 
+footstep_sounds = Audio(
+    'sounds/musique/footstep1.mp3',
+    loop=True,
+    autoplay=False,
+    volume=0.5
+)
+
 music_muted = False
 last_volume = 1
 
@@ -488,11 +495,27 @@ def update():
     move.y = 0
     move = move.normalized() if move.length() > 0 else move
 
+    is_sprinting = held_keys[controls["sprint"]] and held_keys[controls["forward"]] and stamina > 0
+
+    is_moving = move.length() > 0
+
+    if is_moving and player.y <= 2.1:
+        if not footstep_sounds.playing:
+            footstep_sounds.play()
+
+        if is_sprinting:
+            footstep_sounds.pitch = 1.4
+        else:
+            footstep_sounds.pitch = 1
+    else:
+        footstep_sounds.stop()
+
+
+
     player.rotation_y += mouse.velocity[0] * 100
     camera.rotation_x -= mouse.velocity[1] * 100
     camera.rotation_x = clamp(camera.rotation_x, -90, 90)
 
-    is_sprinting = held_keys[controls["sprint"]] and held_keys[controls["forward"]] and stamina > 0
     current_speed = sprint_speed if is_sprinting else speed
 
     player.position += move * current_speed * time.dt

@@ -22,6 +22,9 @@ player.enabled = False
 stamina = 100
 display_stamina = 100
 
+height = 30
+width = 40
+
 stamina_bar = Entity(
     parent=camera.ui,
     model='quad',
@@ -44,13 +47,14 @@ background = Entity(
 )
 
 title = Text(
-    text="Pyromaniac's Labyrinth : GOTY Edition",
+    text="Pyromaniac's Labyrinth : GOTY Edition Playstation 7 edition",
     parent=menu,
     y=0.3,
     scale=2.5,
     color=color.red,
     origin=(0,0)
 )
+
 
 def start_game():
     menu.enabled = False # désactive l'écran de menu principal
@@ -94,6 +98,10 @@ def input(key):
             mouse.locked = False # libère la souris pour la navigation menu
             stamina_bar.enabled = False # cache la barre d'endurance
 
+def labyrinthe():
+
+    
+
 def update_stamina_bar():
     global display_stamina # indique que display_stamina est une variable globale modifiée ici
 
@@ -128,16 +136,20 @@ def update():
             camera.y = lerp(camera.y, 0.5, time.dt * 10)
             stamina += 20 * time.dt
 
-        elif held_keys['left shift'] and stamina > 0: # sprint si shift gauche est maintenu et qu'il reste de l'endurance
+        if held_keys['left shift'] and held_keys['w'] and stamina > 0:
             player.speed = 15
             camera.y = lerp(camera.y, 1, time.dt * 10)
             stamina -= 25 * time.dt
-
-        else: # vitesse normale en l'absence de touches spéciales
+        
+        elif stamina < 0:
+            player.speed = 6
+            camera.y = lerp(camera.y, 1, time.dt * 10)
+        
+        else:
             player.speed = 8
             camera.y = lerp(camera.y, 1, time.dt * 10)
             stamina += 10 * time.dt
 
-    update_stamina_bar() # met à jour la barre d'endurance à la fin de chaque frame
+    update_stamina_bar()
 
 app.run()

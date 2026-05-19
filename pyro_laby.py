@@ -43,6 +43,7 @@ menu = Entity(parent=camera.ui)
 background = Entity(
     parent=menu,
     model='quad',
+    texture = 'assets/menu.png',
     scale=(2,1),
     color=color.dark_gray,
     z=1

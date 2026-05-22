@@ -3,6 +3,8 @@ from ursina.prefabs.first_person_controller import *
 import random
 import json
 import os
+import math
+import time
 
 app = Ursina()
 
@@ -12,7 +14,7 @@ camera.fov = 90
 
 ground = Entity(
     model='plane',
-    scale=(200, 1, 200),
+    scale=(200, 1,200),
     texture='perlin_noise',
     texture_scale=(200, 200),
     color=color.gray,
@@ -30,6 +32,17 @@ player = Entity(
     collider='box',
     color=color.clear,
     position=(0, 2, 0)
+)
+
+arm = Entity(
+    parent=camera,
+    model='assets/arms.fbx',
+    texture='assets/arms1Color.png',
+    collider='box',
+    color=color.white,
+    position=(0.5, -0.6, 1),
+    rotation=(10, -20, 5),
+    scale=(-0.009, 0.009, 0.009)
 )
 
 camera.parent = player
@@ -94,11 +107,13 @@ def load_settings():
 musique_menu = Audio('sounds/musique/epic_music.mp3', loop=True, autoplay=True)
 
 footstep_sounds = Audio(
-    'sounds/musique/footstep1.mp3',
+    'sounds/footstep1.mp3',
     loop=True,
     autoplay=False,
     volume=0.5
 )
+
+slap_sound = Audio('sounds/slap.mp3')
 
 music_muted = False
 last_volume = 1
@@ -206,6 +221,8 @@ volume_slider = Slider(
 
 # PARAMETRES DU JEU
 
+game_active = False
+
 height = 30
 width = 40
 
@@ -215,6 +232,14 @@ gravity = 1
 player_velocity_y = 0
 stand_height = 1.6
 crouch_height = 1.0
+
+arm_base_pos = Vec3(0.5, -0.6, 1)
+arm_base_rot = Vec3(10, -20, 5)
+
+slap_timer = 0
+slap_active = False
+
+anim_t = 0
 
 # REGLAGES AUDIO
 
@@ -313,6 +338,8 @@ setup_controls_menu()
 # MENU FUNCTIONS (IMPORTANTS)
 
 def start_game():
+    global game_active
+
     main_menu.enabled = False
     options_menu_ui.enabled = False
 
@@ -322,6 +349,8 @@ def start_game():
     ground.enabled = True
 
     musique_menu.volume = 0
+
+    game_active = True
 
 
 def quit_game():
@@ -415,9 +444,17 @@ def input(key):
     global player_velocity_y
     global rebinding_action
     global ignorer_premiere_entree
+    global game_active
 
     if player.enabled and key == controls["jump"] and player.y <= 2:
         player_velocity_y = 8
+
+    global slap_active, slap_timer
+
+    if game_active and key == 'left mouse down':
+        slap_active = True
+        slap_timer = 0
+        slap_sound.play()
 
     if rebinding_action is not None:
         action_name, key_text = rebinding_action
@@ -470,6 +507,7 @@ def update_stamina_bar():
 
 def update():
     global stamina, player_velocity_y
+    global anim_t, slap_timer, slap_active
 
     stamina = clamp(stamina, 0, 100)
 
@@ -511,8 +549,6 @@ def update():
     else:
         footstep_sounds.stop()
 
-
-
     player.rotation_y += mouse.velocity[0] * 100
     camera.rotation_x -= mouse.velocity[1] * 100
     camera.rotation_x = clamp(camera.rotation_x, -90, 90)
@@ -534,6 +570,49 @@ def update():
     if player.y < 2:
         player.y = 2
         player_velocity_y = 0
+
+    is_moving = move.length() > 0
+    is_sprinting = held_keys[controls["sprint"]] and held_keys[controls["forward"]] and stamina > 0
+
+    if not is_moving:
+        anim_speed = 1.5
+        amplitude = 0.003
+    elif is_sprinting:
+        anim_speed = 12
+        amplitude = 0.06
+    else:
+        anim_speed = 7
+        amplitude = 0.03
+
+    anim_t += time.dt * anim_speed
+    bob_y = math.sin(anim_t * 2) * amplitude
+
+    target_pos = arm_base_pos + Vec3(0, bob_y, 0)
+    target_rot = arm_base_rot
+
+    # CLAQUE 
+
+    slap_x = 0
+    slap_rot = 0
+
+    if slap_active:
+        slap_timer += time.dt
+        t = slap_timer * 10
+
+        if t < 1:
+            slap_x = lerp(0, -1.2, t)
+            slap_rot = lerp(0, -100, t)
+        elif t < 2:
+            slap_x = lerp(-0.28, 0, t - 1)
+            slap_rot = lerp(-40, 0, t - 1)
+        else:
+            slap_active = False
+
+    final_pos = target_pos + Vec3(slap_x, 0, 0)
+    final_rot = target_rot + Vec3(0, 0, slap_rot)
+
+    arm.position = lerp(arm.position, final_pos, time.dt * 10)
+    arm.rotation = lerp(arm.rotation, final_rot, time.dt * 10)
 
     update_stamina_bar()
 

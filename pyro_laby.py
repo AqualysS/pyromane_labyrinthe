@@ -12,15 +12,16 @@ camera.fov = 90
 
 ground = Entity(
     model='plane',
-    scale=(1000, 1, 1000),
-    texture='brick',
-    texture_scale=(1000, 1000),
+    scale=(200, 1, 200),
+    texture='perlin_noise',
+    texture_scale=(200, 200),
     color=color.gray,
     collider='box'
 )
 
 DirectionalLight()
 AmbientLight()
+Sky()
 
 # PARAMETRES DU JOUEUR
 

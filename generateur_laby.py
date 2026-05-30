@@ -5,27 +5,27 @@ directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
               #Est     Ouest     Sud     Nord
 
 mur_verticaux = []
-for i in range(10):
-    mur_verticaux.append([1] * 10)
+for i in range(20):
+    mur_verticaux.append([1] * 20)
 
 mur_horizontaux = []
-for i in range(10):
-    mur_horizontaux.append([1] * 10)
+for i in range(20):
+    mur_horizontaux.append([1] * 20)
 
 case_visite = []
-for i in range(10):
-    case_visite.append([False for j in range(10)])
+for i in range(20):
+    case_visite.append([False for j in range(20)])
 
-x_depart = randint(0, 9)
-y_depart = randint(0, 9)
+x_depart = randint(0, 19)
+y_depart = randint(0, 19)
 
 def apparition_coffres(nombre_de_coffre):
     liste_coffres = []
     coffres_places = 0
 
     while coffres_places < nombre_de_coffre:
-        x = randint(0, 9)
-        y = randint(0, 9)
+        x = randint(0, 19)
+        y = randint(0, 19)
 
         if (x, y) not in liste_coffres:
             liste_coffres.append((x, y))
@@ -51,7 +51,7 @@ while len(pile_visite) > 0:
     for (dx, dy) in directions:
         voisin_x = x + dx
         voisin_y = y + dy
-        if 0 <= voisin_x < 10 and 0 <= voisin_y < 10:
+        if 0 <= voisin_x < 20 and 0 <= voisin_y < 20:
             if case_visite[voisin_y][voisin_x] == False:
                 voisins_valides.append((voisin_x, voisin_y))
 

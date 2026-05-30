@@ -293,7 +293,8 @@ title = Text(
     y=0.3,
     scale=2.5,
     color=color.red,
-    origin=(0, 0)
+    origin=(0, 0),
+    font = 'assets/font/IMMORTAL.ttf'
 )
 
 # MENU OPTIONS
@@ -303,7 +304,8 @@ options_background = Entity(
     model='quad',
     scale=(2, 1),
     color=color.black66,
-    z=1
+    z=1,
+    font = 'assets/font/IMMORTAL.ttf'
 )
 
 options_title = Text(
@@ -312,7 +314,8 @@ options_title = Text(
     y=0.3,
     scale=2,
     color=color.azure,
-    origin=(0, 0)
+    origin=(0, 0),
+    font = 'assets/font/IMMORTAL.ttf'
 )
 
 # MENU AUDIO
@@ -331,7 +334,8 @@ audio_title = Text(
     y=0.3,
     scale=2,
     color=color.azure,
-    origin=(0, 0)
+    origin=(0, 0),
+    font = 'assets/font/IMMORTAL.ttf'
 )
 
 volume_text = Text(
@@ -339,7 +343,8 @@ volume_text = Text(
     parent=audio_menu_ui,
     y=0.1,
     x=-0.08,
-    scale=1.5
+    scale=1.5,
+    font = 'assets/font/IMMORTAL.ttf'
 )
 
 volume_slider = Slider(
@@ -527,7 +532,7 @@ def open_controls_menu():
 def create_button(parent, txt, y, action):
     cadre = Entity(
         parent=parent,
-        model='quad',
+        model=Quad(radius=0.1),
         scale=(0.43, 0.13),
         color=color.hex('#c20000'),
         y=y,

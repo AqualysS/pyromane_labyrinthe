@@ -1,6 +1,7 @@
 from ursina import *
 from ursina.prefabs.first_person_controller import *
 import random
+from random import randint
 import json
 import os
 import math
@@ -25,13 +26,137 @@ DirectionalLight()
 AmbientLight()
 Sky()
 
+# LE LABYRINTHE 
+
+directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+              #Est     Ouest     Sud     Nord
+
+mur_verticaux = []
+for i in range(10):
+    mur_verticaux.append([1] * 10)
+
+mur_horizontaux = []
+for i in range(10):
+    mur_horizontaux.append([1] * 10)
+
+case_visite = []
+for i in range(10):
+    case_visite.append([False for j in range(10)])
+
+x_depart = randint(0, 9)
+y_depart = randint(0, 9)
+
+    # placement des coffres
+
+def apparition_coffres(nombre_de_coffre):
+    liste_coffres = []
+    coffres_places = 0
+
+    while coffres_places < nombre_de_coffre:
+        x = randint(0, 9)
+        y = randint(0, 9)
+
+        if (x, y) not in liste_coffres:
+            liste_coffres.append((x, y))
+            coffres_places += 1
+    return liste_coffres
+
+positions_des_coffres = apparition_coffres(4)
+
+    # spawn du joueur
+
+def apparition(x_depart, y_depart, case_visite) :
+	case_visite[y_depart][x_depart] = True
+	pile_visite = []
+	pile_visite.append((y_depart, x_depart))
+	return pile_visite
+
+pile_visite = apparition(0, 0, case_visite)
+
+    # génération du labyrinthe
+
+while len(pile_visite) > 0:
+    case_actuelle = pile_visite[-1]
+    x = case_actuelle[0]
+    y = case_actuelle[1]
+    voisins_valides = []
+    
+    for (dx, dy) in directions:
+        voisin_x = x + dx
+        voisin_y = y + dy
+        if 0 <= voisin_x < 10 and 0 <= voisin_y < 10:
+            if case_visite[voisin_y][voisin_x] == False:
+                voisins_valides.append((voisin_x, voisin_y))
+
+    if len(voisins_valides) > 0 :
+        prochain_voisin = random.choice(voisins_valides)
+        nv_x = prochain_voisin[0]
+        nv_y = prochain_voisin[1]
+
+        if nv_x == x + 1:
+            mur_verticaux[y][x] = 0
+        elif nv_x == x - 1:
+            mur_verticaux[y][x - 1] = 0
+        elif nv_y == y + 1:
+            mur_horizontaux[y][x] = 0
+        elif nv_y == y - 1:
+            mur_horizontaux[y - 1][x] = 0
+
+        case_visite[nv_y][nv_x] = True
+        pile_visite.append((nv_x, nv_y))
+        
+    else:
+        pile_visite.pop()
+
+    #mise en forme avec ursina
+
+for y in range(10):
+    for x in range(10):
+    #mur exterieur
+        if x == 0:
+            Entity(model = 'cube',
+                   scale = (0.1, 8, 2),
+                   position=(-1, 1.5, y * 2),
+                   texture='brick',
+                   collider='box')
+        if y == 0:
+            Entity(model='cube',
+                  scale=(2, 8, 0.1),
+                  position=(x * 2, 1.5, -1),
+                  texture='brick',
+                  collider='box')
+    #mur interieur
+        if mur_verticaux[y][x] == 1:
+            Entity(model='cube',
+                   scale=(0.1, 8, 2),
+                   position=(x * 2 + 1, 1.5, y * 2),
+                   texture='brick',
+                   collider='box')
+        if mur_horizontaux[y][x] == 1:
+            Entity(model='cube',
+                   scale=(2, 8, 0.1),
+                   position=(x * 2, 1.5, y * 2 + 1),
+                   texture='brick',
+                   collider='box')
+    #apparition des coffres
+        if (x, y) in positions_des_coffres:
+            Entity(
+                model='cube', 
+                scale=0.6, 
+                color=color.gold, 
+                position=(x * 2, 0.3, y * 2), 
+                texture='white_cube')
+
 # PARAMETRES DU JOUEUR
+
+x_depart = randint(0, 9)
+y_depart = randint(0, 9)
 
 player = Entity(
     model='cube',
     collider='box',
     color=color.clear,
-    position=(0, 2, 0)
+    position=(x_depart * 2, 1, y_depart * 2)
 )
 
 arm = Entity(

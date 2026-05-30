@@ -12,6 +12,7 @@ app = Ursina()
 # MAP CONFIG
 
 camera.fov = 90
+camera.clip_plane_near = 0.3
 
 ground = Entity(
     model='plane',
@@ -64,6 +65,7 @@ def apparition_coffres(nombre_de_coffre):
     return liste_coffres
 
 positions_des_coffres = apparition_coffres(4)
+coffres_set = set(positions_des_coffres)
 
     # spawn du joueur
 
@@ -179,6 +181,83 @@ arm = Entity(
     scale=(-0.009, 0.009, 0.009)
 )
 
+# MINI MAP
+
+minimap = Entity(
+    parent=camera.ui,
+    model='quad',
+    scale=(0.25, 0.25),
+    position=(0.75, 0.38),
+    color=color.black66
+)
+
+mini_offset = Vec2(-0.125, -0.125)
+mini_scale = 0.25 / (10 * taille_case)
+
+def world_to_minimap(x, y):
+    return Vec2(
+        x * mini_scale + mini_offset.x,
+        y * mini_scale + mini_offset.y
+    )
+
+mini_murs = []
+
+for y in range(10):
+    for x in range(10):
+
+        # murs verticaux
+        if mur_verticaux[y][x] == 1:
+            pos = world_to_minimap(
+                x * taille_case + decalage,
+                y * taille_case
+            )
+
+            mini_murs.append(Entity(
+                parent=minimap,
+                model='quad',
+                color=color.gray,
+                scale=0.01,
+                position=pos
+            ))
+
+        # murs horizontaux
+        if mur_horizontaux[y][x] == 1:
+            pos = world_to_minimap(
+                x * taille_case,
+                y * taille_case + decalage
+            )
+
+            mini_murs.append(Entity(
+                parent=minimap,
+                model='quad',
+                color=color.gray,
+                scale=0.01,
+                position=pos
+            ))
+
+mini_coffres = []
+
+for (x, y) in positions_des_coffres:
+    pos = world_to_minimap(x * taille_case, y * taille_case)
+
+    mini_coffres.append(Entity(
+        parent=minimap,
+        model='circle',
+        color=color.gold,
+        scale=0.02,
+        position=pos
+    ))
+
+player_dot = Entity(
+    parent=minimap,
+    model='circle',
+    color=color.red,
+    scale=0.05,
+    position=(0, 0)
+)
+
+world_scale = 0.01
+
 camera.parent = player
 camera.position = (0, 1.6, 0)
 
@@ -288,7 +367,7 @@ main_background = Entity(
 )
 
 title = Text(
-    text="Pyromaniac's Labyrinth : GOTY Edition/Director's Cut",
+    text="Pyromaniac's Labyrinth : GOTY Edition Playstation 7 edition",
     parent=main_menu,
     y=0.3,
     scale=2.5,
@@ -525,42 +604,33 @@ def open_controls_menu():
 # FONCTION BOUTTONS
 
 def create_button(parent, txt, y, action):
-    cadre = Entity(
-        parent=parent,
-        model='quad',
-        scale=(0.43, 0.13),
-        color=color.hex('#c20000'),
-        y=y,
-        z=0.01
-    )
-    
     btn = Button(
         text=txt,
-        parent=cadre,
-        scale=(0.93, 0.82),
-        color=color.hex('#ffc500'),
-        highlight_color=color.hex('#ffe066'),
+        parent=parent,
+        y=y,
+        scale=(0.4, 0.1),
+        color=color.yellow,
+        highlight_color=color.orange,
         pressed_color=color.gray,
-        text_color=color.hex('#5c0606'),
-        on_click=action,
-        z = -0.02
+        text_color=color.red,
+        on_click=action
     )
 
-    base_scale = cadre.scale
-    base_y = cadre.y
+    base_scale = btn.scale
+    base_y = btn.y
 
     def on_enter():
-        cadre.animate_scale(base_scale * 1.1, duration=0.1)
-        cadre.animate_y(base_y + 0.01, duration=0.1)
+        btn.animate_scale(base_scale * 1.1, duration=0.1)
+        btn.animate_y(base_y + 0.01, duration=0.1)
 
     def on_exit():
-        cadre.animate_scale(base_scale, duration=0.1)
-        cadre.animate_y(base_y, duration=0.1)
+        btn.animate_scale(base_scale, duration=0.1)
+        btn.animate_y(base_y, duration=0.1)
 
     def on_click():
-        cadre.animate_scale(base_scale * 0.95, duration=0.05)
-        invoke(lambda: cadre.animate_scale(base_scale * 1.1, duration=0.05), delay=0.05)
-        invoke(lambda: cadre.animate_scale(base_scale, duration=0.1), delay=0.1)
+        btn.animate_scale(base_scale * 0.95, duration=0.05)
+        invoke(lambda: btn.animate_scale(base_scale * 1.1, duration=0.05), delay=0.05)
+        invoke(lambda: btn.animate_scale(base_scale, duration=0.1), delay=0.1)
 
         action()
 
@@ -648,6 +718,42 @@ def update_stamina_bar():
 
 # LE JEU EN LUI MEME
 
+def move_with_collision(entity, direction, speed):
+    direction.y = 0
+
+    if direction.length() == 0:
+        return
+
+    direction = direction.normalized()
+    step = direction * speed * time.dt
+
+    hit = raycast(
+        entity.position + Vec3(0, 1, 0),
+        direction,
+        distance=0.6,
+        ignore=(entity,)
+    )
+
+    future_pos = entity.position + step
+    gx = int(round(future_pos.x / taille_case))
+    gy = int(round(future_pos.z / taille_case))
+
+    hit_chest = False
+
+    for (cx, cy) in coffres_set:
+        chest_pos = Vec3(cx * taille_case, 0, cy * taille_case)
+
+        dx = future_pos.x - chest_pos.x
+        dz = future_pos.z - chest_pos.z
+
+        if (dx * dx + dz * dz) < 0.8 * 0.8:
+            hit_chest = True
+            break
+
+
+    if (not hit.hit) and (not hit_chest):
+        entity.position += step
+
 def update():
     global stamina, player_velocity_y
     global anim_t, slap_timer, slap_active
@@ -668,37 +774,28 @@ def update():
     if held_keys[controls["right"]]:
         move += camera.right
 
-    if held_keys[controls["crouch"]]:
+    move.y = 0
+
+    is_moving = move.length() > 0
+
+    is_crouching = held_keys[controls["crouch"]]
+
+    if is_crouching:
         camera.y = lerp(camera.y, crouch_height, time.dt * 10)
         stamina += 20 * time.dt
     else:
         camera.y = lerp(camera.y, stand_height, time.dt * 10)
 
-    move.y = 0
-    move = move.normalized() if move.length() > 0 else move
-
-    is_sprinting = held_keys[controls["sprint"]] and held_keys[controls["forward"]] and stamina > 0
-
-    is_moving = move.length() > 0
-
-    if is_moving and player.y <= 2.1:
-        if not footstep_sounds.playing:
-            footstep_sounds.play()
-
-        if is_sprinting:
-            footstep_sounds.pitch = 1.4
-        else:
-            footstep_sounds.pitch = 1
-    else:
-        footstep_sounds.stop()
-
-    player.rotation_y += mouse.velocity[0] * 100
-    camera.rotation_x -= mouse.velocity[1] * 100
-    camera.rotation_x = clamp(camera.rotation_x, -90, 90)
+    is_sprinting = (
+        held_keys[controls["sprint"]] and
+        held_keys[controls["forward"]] and
+        stamina > 0 and
+        not is_crouching
+    )
 
     current_speed = sprint_speed if is_sprinting else speed
 
-    player.position += move * current_speed * time.dt
+    move_with_collision(player, move, current_speed)
 
     if is_sprinting:
         stamina -= 25 * time.dt
@@ -707,15 +804,24 @@ def update():
 
     stamina = clamp(stamina, 0, 100)
 
+    player.rotation_y += mouse.velocity[0] * 100
+    camera.rotation_x -= mouse.velocity[1] * 100
+    camera.rotation_x = clamp(camera.rotation_x, -90, 90)
+
+    if is_moving and player.y <= 2.1:
+        if not footstep_sounds.playing:
+            footstep_sounds.play()
+
+        footstep_sounds.pitch = 1.4 if is_sprinting else 1
+    else:
+        footstep_sounds.stop()
+
     player_velocity_y -= 25 * time.dt
     player.y += player_velocity_y * time.dt
 
     if player.y < 2:
         player.y = 2
         player_velocity_y = 0
-
-    is_moving = move.length() > 0
-    is_sprinting = held_keys[controls["sprint"]] and held_keys[controls["forward"]] and stamina > 0
 
     if not is_moving:
         anim_speed = 1.5
@@ -732,8 +838,6 @@ def update():
 
     target_pos = arm_base_pos + Vec3(0, bob_y, 0)
     target_rot = arm_base_rot
-
-    # CLAQUE 
 
     slap_x = 0
     slap_rot = 0
@@ -756,6 +860,8 @@ def update():
 
     arm.position = lerp(arm.position, final_pos, time.dt * 10)
     arm.rotation = lerp(arm.rotation, final_rot, time.dt * 10)
+
+    player_dot.position = world_to_minimap(player.x, player.z)
 
     update_stamina_bar()
 

@@ -367,7 +367,7 @@ main_background = Entity(
 )
 
 title = Text(
-    text="Pyromaniac's Labyrinth : GOTY Edition Playstation 7 edition",
+    text="Pyromaniac's Labyrinth : GOTY Edition/Diractor's Cut",
     parent=main_menu,
     y=0.3,
     scale=2.5,
@@ -509,7 +509,7 @@ def create_control_row(parent, action_name, display_name, y):
         x=-0.3,
         y=y,
         scale=1.2,
-        font='VeraMono.ttf'
+        font='assets/font/IMMORTAL.ttf'
     )
 
     key_text = Text(
@@ -519,7 +519,7 @@ def create_control_row(parent, action_name, display_name, y):
         y=y,
         scale=1.2,
         color=color.azure,
-        font='VeraMono.ttf'
+        font='assets/font/IMMORTAL.ttf'
     )
 
     def change_key():
@@ -533,6 +533,7 @@ def create_control_row(parent, action_name, display_name, y):
     Button(
         text="Changer",
         text_color=color.red,
+        font='assets/font/IMMORTAL.ttf',
         parent=parent,
         x=0.35,
         y=y,

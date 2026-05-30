@@ -16,9 +16,9 @@ camera.fov = 90
 ground = Entity(
     model='plane',
     scale=(200, 1,200),
-    texture='perlin_noise',
+    texture='grass',
     texture_scale=(200, 200),
-    color=color.gray,
+    color=color.yellow,
     collider='box'
 )
 
@@ -26,7 +26,7 @@ DirectionalLight()
 AmbientLight()
 Sky()
 
-# LE LABYRINTHE 
+            # LE LABYRINTHE 
 
 directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
               #Est     Ouest     Sud     Nord
@@ -42,6 +42,8 @@ for i in range(10):
 case_visite = []
 for i in range(10):
     case_visite.append([False for j in range(10)])
+
+taille_case = 4
 
 x_depart = randint(0, 9)
 y_depart = randint(0, 9)
@@ -110,42 +112,49 @@ while len(pile_visite) > 0:
 
     #mise en forme avec ursina
 
+decalage = taille_case / 2
+
 for y in range(10):
     for x in range(10):
     #mur exterieur
         if x == 0:
             Entity(model = 'cube',
-                   scale = (0.1, 8, 2),
-                   position=(-1, 1.5, y * 2),
+                   scale = (0.1, 12, taille_case),
+                   position=(-decalage, 1.5, y * taille_case),
                    texture='brick',
+                   color=color.orange,
                    collider='box')
         if y == 0:
             Entity(model='cube',
-                  scale=(2, 8, 0.1),
-                  position=(x * 2, 1.5, -1),
+                  scale=(taille_case, 12, 0.1),
+                  position=(x * taille_case, 1.5, -decalage),
                   texture='brick',
+                  color=color.orange,
                   collider='box')
     #mur interieur
         if mur_verticaux[y][x] == 1:
             Entity(model='cube',
-                   scale=(0.1, 8, 2),
-                   position=(x * 2 + 1, 1.5, y * 2),
+                   scale=(0.1, 12, taille_case),
+                   position=(x * taille_case + decalage, 1.5, y * taille_case),
                    texture='brick',
+                   color=color.orange,
                    collider='box')
         if mur_horizontaux[y][x] == 1:
             Entity(model='cube',
-                   scale=(2, 8, 0.1),
-                   position=(x * 2, 1.5, y * 2 + 1),
+                   scale=(taille_case, 12, 0.1),
+                   position=(x * taille_case, 1.5, y * taille_case + decalage),
                    texture='brick',
+                   color=color.orange,
                    collider='box')
     #apparition des coffres
         if (x, y) in positions_des_coffres:
             Entity(
-                model='cube', 
-                scale=0.6, 
+                model='assets/coffre/low_poly_treasure_chest.glb', 
+                scale=0.02, 
                 color=color.gold, 
-                position=(x * 2, 0.3, y * 2), 
-                texture='white_cube')
+                position=(x * taille_case, 0.1, y * taille_case), 
+                collider='box'
+                )
 
 # PARAMETRES DU JOUEUR
 
@@ -156,7 +165,7 @@ player = Entity(
     model='cube',
     collider='box',
     color=color.clear,
-    position=(x_depart * 2, 1, y_depart * 2)
+    position=(x_depart * taille_case, 1, y_depart * taille_case)
 )
 
 arm = Entity(

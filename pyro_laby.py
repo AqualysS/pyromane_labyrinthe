@@ -288,7 +288,7 @@ main_background = Entity(
 )
 
 title = Text(
-    text="Pyromaniac's Labyrinth : GOTY Edition Playstation 7 edition",
+    text="Pyromaniac's Labyrinth : GOTY Edition/Director's Cut",
     parent=main_menu,
     y=0.3,
     scale=2.5,
@@ -525,33 +525,42 @@ def open_controls_menu():
 # FONCTION BOUTTONS
 
 def create_button(parent, txt, y, action):
+    cadre = Entity(
+        parent=parent,
+        model='quad',
+        scale=(0.43, 0.13),
+        color=color.hex('#c20000'),
+        y=y,
+        z=0.01
+    )
+    
     btn = Button(
         text=txt,
-        parent=parent,
-        y=y,
-        scale=(0.4, 0.1),
-        color=color.yellow,
-        highlight_color=color.orange,
+        parent=cadre,
+        scale=(0.93, 0.82),
+        color=color.hex('#ffc500'),
+        highlight_color=color.hex('#ffe066'),
         pressed_color=color.gray,
-        text_color=color.red,
-        on_click=action
+        text_color=color.hex('#5c0606'),
+        on_click=action,
+        z = -0.02
     )
 
-    base_scale = btn.scale
-    base_y = btn.y
+    base_scale = cadre.scale
+    base_y = cadre.y
 
     def on_enter():
-        btn.animate_scale(base_scale * 1.1, duration=0.1)
-        btn.animate_y(base_y + 0.01, duration=0.1)
+        cadre.animate_scale(base_scale * 1.1, duration=0.1)
+        cadre.animate_y(base_y + 0.01, duration=0.1)
 
     def on_exit():
-        btn.animate_scale(base_scale, duration=0.1)
-        btn.animate_y(base_y, duration=0.1)
+        cadre.animate_scale(base_scale, duration=0.1)
+        cadre.animate_y(base_y, duration=0.1)
 
     def on_click():
-        btn.animate_scale(base_scale * 0.95, duration=0.05)
-        invoke(lambda: btn.animate_scale(base_scale * 1.1, duration=0.05), delay=0.05)
-        invoke(lambda: btn.animate_scale(base_scale, duration=0.1), delay=0.1)
+        cadre.animate_scale(base_scale * 0.95, duration=0.05)
+        invoke(lambda: cadre.animate_scale(base_scale * 1.1, duration=0.05), delay=0.05)
+        invoke(lambda: cadre.animate_scale(base_scale, duration=0.1), delay=0.1)
 
         action()
 

@@ -611,46 +611,44 @@ def open_controls_menu():
 def create_button(parent, txt, y, action):
     cadre = Entity(
         parent=parent,
-        model='quad',
+        model=Quad(radius=0.1),
         scale=(0.43, 0.13),
         color=color.hex('#c20000'),
-        y=y,
-        z=0.01
+        y=y
     )
-    
+
     btn = Button(
         text=txt,
-        parent=parent,
-        y=y,
-        scale=(0.4, 0.1),
-        color=color.yellow,
-        highlight_color=color.orange,
+        parent=cadre,
+        scale=(0.93, 0.82),
+        color=color.hex('#ffc500'),
+        highlight_color=color.hex('#ffe066'),
         pressed_color=color.gray,
-        text_color=color.red,
-        on_click=action
+        text_color=color.hex('#5c0606'),
+        on_click=action,
+        z=-0.02
     )
 
-    base_scale = btn.scale
-    base_y = btn.y
+    base_scale = cadre.scale
+    base_y = cadre.y
 
     def on_enter():
-        btn.animate_scale(base_scale * 1.1, duration=0.1)
-        btn.animate_y(base_y + 0.01, duration=0.1)
+        cadre.animate_scale(base_scale * 1.1, duration=0.1)
+        cadre.animate_y(base_y + 0.01, duration=0.1)
 
     def on_exit():
-        btn.animate_scale(base_scale, duration=0.1)
-        btn.animate_y(base_y, duration=0.1)
+        cadre.animate_scale(base_scale, duration=0.1)
+        cadre.animate_y(base_y, duration=0.1)
 
-    def on_click():
-        btn.animate_scale(base_scale * 0.95, duration=0.05)
-        invoke(lambda: btn.animate_scale(base_scale * 1.1, duration=0.05), delay=0.05)
-        invoke(lambda: btn.animate_scale(base_scale, duration=0.1), delay=0.1)
-
+    def on_click_anim():
+        cadre.animate_scale(base_scale * 0.95, duration=0.05)
+        invoke(lambda: cadre.animate_scale(base_scale * 1.1, duration=0.05), delay=0.05)
+        invoke(lambda: cadre.animate_scale(base_scale, duration=0.1), delay=0.1)
         action()
 
     btn.on_mouse_enter = on_enter
     btn.on_mouse_exit = on_exit
-    btn.on_click = on_click
+    btn.on_click = on_click_anim
 
     return btn
 

@@ -1,0 +1,13 @@
+{
+    "volume": 1.0,
+    "controls": {
+        "forward": "w",
+        "back": "s",
+        "left": "a",
+        "right": "d",
+        "jump": "space",
+        "sprint": "left shift",
+        "crouch": "g"
+    },
+    "music_muted": false
+}

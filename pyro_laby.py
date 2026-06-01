@@ -332,7 +332,7 @@ chair = Entity(
     enabled=False
 )
 
-boy = Entity(position=(0,1,4), enabled=False)
+boy = Entity(position=(0,1,5), enabled=False)
 
 body = Entity(parent=boy, model='cube',
               scale=(0.6,1,0.3),
@@ -372,7 +372,6 @@ text_ui = Text(
     '',
     position=(-0.5,-0.4),
     scale=1.5,
-    background=True,
     color=color.white
 )
 
@@ -965,6 +964,48 @@ def open_controls_menu():
 
 # FONCTION VICTOIRE 
 
+class FireworkParticule(Entity):
+    def __init__(self, position):
+        super().__init__(
+            model='sphere',
+            color=random.choice([
+                color.red,
+                color.blue,
+                color.green,
+                color.yellow,
+                color.orange,
+                color.magenta,
+                color.cyan
+            ]),
+            scale=0.15,
+            position=position
+        )
+
+        self.velocity = Vec3(
+            random.uniform(-12, 12),
+            random.uniform(4, 12),
+            random.uniform(-12, 12)
+        )
+
+        self.life = random.uniform(2, 4)
+
+    def update(self):
+        self.position += self.velocity * time.dt
+
+        self.velocity.y -= 9.81 * time.dt
+
+        self.life -= time.dt
+
+        self.scale *= 0.995
+        self.alpha = max(0, self.life / 4)
+
+        if self.life <= 0:
+            destroy(self)
+
+def spawn_firework(position):
+    for i in range(60):
+        FireworkParticule(position)
+
 def win_cinematic():
     global game_won
 
@@ -981,13 +1022,13 @@ def win_cinematic():
     )
 
     player.animate_y(
-        player.y + 100,
+        player.y + 40,
         duration=8,
         curve=curve.linear
     )
 
     camera.animate_y(
-        camera.y + 100,
+        camera.y + 40,
         duration=8,
         curve=curve.linear
     )
@@ -996,20 +1037,39 @@ def win_cinematic():
 
 def show_victory_screen():
 
-    Entity(
+    flash = Entity(
         parent=camera.ui,
         model='quad',
         scale=3,
         color=color.white
     )
 
+    destroy(flash, delay=1)
+
     Text(
         text="PYROMANIAC'S LABYRINTH\nTERMINÉ",
         parent=camera.ui,
         scale=3,
-        origin=(0,0),
+        origin=(0, 0),
         color=color.black
     )
+
+    Sky(color=color.black)
+
+    camera.parent = scene
+    camera.position = (0, 25, -40)
+    camera.look_at(Vec3(0, 25, 0))
+
+    for i in range(40):
+        invoke(
+            spawn_firework,
+            Vec3(
+                random.uniform(-15, 15),
+                random.uniform(15, 35),
+                random.uniform(-5, 5)
+            ),
+            delay=i * 0.25
+        )
 
 # FONCTION BOUTTONS
 

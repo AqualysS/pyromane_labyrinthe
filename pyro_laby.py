@@ -267,7 +267,7 @@ charge_circle = Entity(
 quest_text = Text(
     text="Briquets: 0 / 4",
     parent=camera.ui,
-    position=(-0.85, 0.45),
+    position=(-0.8, 0.5),
     scale=1.5,
     color=color.white
 )
@@ -395,6 +395,8 @@ def start_cinematic():
     mouse.locked = False
     ground.enabled = False
     arm.enabled = False
+    minimap.enabled = False
+    quest_text.enabled = False
 
     desk.enabled = True
     pc.enabled = True
@@ -466,6 +468,9 @@ def step_4():
     player.enabled = True
     mouse.locked = True
     arm.enabled = True
+    minimap.enabled = True
+    stamina_bar.enabled = True
+    quest_text.enabled = True
 
     cinematic = False
     cinematic_done = True
@@ -482,8 +487,10 @@ minimap = Entity(
     model='quad',
     scale=(0.5, 0.5),
     position=(0.65, 0.28),
-    color=color.black66
+    color=color.black66,
 )
+
+minimap.enabled = False
 
 mini_offset = Vec2(-0.35, -0.35)
 mini_scale = 0.25 / (5 * taille_case)
@@ -909,6 +916,7 @@ def start_game():
         player.enabled = True
         mouse.locked = True
         arm.enabled = True
+        minimap.enabled = True
         stamina_bar.enabled = True
 
         for e in maze_entities:
@@ -937,6 +945,7 @@ def return_to_main_menu():
 
     player.enabled = False
     mouse.locked = False
+    minimap.enabled = False
 
 
 def open_audio_menu():
@@ -956,21 +965,50 @@ def open_controls_menu():
 
 # FONCTION VICTOIRE 
 
-def win_game():
-    global game_won, game_active
+def win_cinematic():
+    global game_won
 
     game_won = True
-    game_active = False
 
-    player.enabled = False
     mouse.locked = False
 
+    player.enabled = False
+
+    sky_light = PointLight(
+        position=player.position + Vec3(0,50,0),
+        color=color.white,
+        intensity=10
+    )
+
+    player.animate_y(
+        player.y + 100,
+        duration=8,
+        curve=curve.linear
+    )
+
+    camera.animate_y(
+        camera.y + 100,
+        duration=8,
+        curve=curve.linear
+    )
+
+    invoke(show_victory_screen, delay=8)
+
+def show_victory_screen():
+
+    Entity(
+        parent=camera.ui,
+        model='quad',
+        scale=3,
+        color=color.white
+    )
+
     Text(
-        text="VOUS AVEZ GAGNÉ",
+        text="PYROMANIAC'S LABYRINTH\nTERMINÉ",
         parent=camera.ui,
         scale=3,
-        origin=(0, 0),
-        color=color.gold
+        origin=(0,0),
+        color=color.black
     )
 
 # FONCTION BOUTTONS
@@ -1135,13 +1173,14 @@ def input(key):
             player.enabled = True
             mouse.locked = True
             stamina_bar.enabled = True
+            minimap.enabled = True
             player_velocity_y = 0
         else:
             main_menu.enabled = True
             player.enabled = False
             mouse.locked = False
             stamina_bar.enabled = False
-
+            minimap.enabled = False
 # STAMINA BAR
 
 def update_stamina_bar():
@@ -1343,7 +1382,7 @@ def update():
         if charge_timer >= 5:
             charge_active = False
             charge_circle.enabled = False
-            win_game()
+            win_cinematic()
 
     final_pos = target_pos + Vec3(slap_x, 0, 0)
     final_rot = target_rot + Vec3(0, 0, slap_rot)

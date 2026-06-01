@@ -11,8 +11,9 @@ app = Ursina()
 
 # MAP CONFIG
 
-camera.fov = 90
-camera.clip_plane_near = 0.3
+maze_entities = []
+camera.fov = 80
+camera.clip_plane_near = 0.01
 
 ground = Entity(
     model='plane',
@@ -22,6 +23,8 @@ ground = Entity(
     color=color.yellow,
     collider='box'
 )
+
+maze_entities.append(ground)
 
 DirectionalLight()
 AmbientLight()
@@ -118,45 +121,70 @@ decalage = taille_case / 2
 
 for y in range(15):
     for x in range(15):
-    #mur exterieur
+
+        # mur extérieur gauche
         if x == 0:
-            Entity(model = 'cube',
-                   scale = (0.1, 12, taille_case),
-                   position=(-decalage, 1.5, y * taille_case),
-                   texture='brick',
-                   color=color.orange,
-                   collider='box')
+            mur = Entity(
+                model='cube',
+                scale=(0.1, 12, taille_case),
+                position=(-decalage, 1.5, y * taille_case),
+                texture='brick',
+                color=color.orange,
+                collider='box',
+                enabled=False
+            )
+            maze_entities.append(mur)
+
+        # mur extérieur haut
         if y == 0:
-            Entity(model='cube',
-                  scale=(taille_case, 12, 0.1),
-                  position=(x * taille_case, 1.5, -decalage),
-                  texture='brick',
-                  color=color.orange,
-                  collider='box')
-    #mur interieur
+            mur = Entity(
+                model='cube',
+                scale=(taille_case, 12, 0.1),
+                position=(x * taille_case, 1.5, -decalage),
+                texture='brick',
+                color=color.orange,
+                collider='box',
+                enabled=False
+            )
+            maze_entities.append(mur)
+
+        # mur vertical intérieur
         if mur_verticaux[y][x] == 1:
-            Entity(model='cube',
-                   scale=(0.1, 12, taille_case),
-                   position=(x * taille_case + decalage, 1.5, y * taille_case),
-                   texture='brick',
-                   color=color.orange,
-                   collider='box')
+            mur = Entity(
+                model='cube',
+                scale=(0.1, 12, taille_case),
+                position=(x * taille_case + decalage, 1.5, y * taille_case),
+                texture='brick',
+                color=color.orange,
+                collider='box',
+                enabled=False
+            )
+            maze_entities.append(mur)
+
+        # mur horizontal intérieur
         if mur_horizontaux[y][x] == 1:
-            Entity(model='cube',
-                   scale=(taille_case, 12, 0.1),
-                   position=(x * taille_case, 1.5, y * taille_case + decalage),
-                   texture='brick',
-                   color=color.orange,
-                   collider='box')
-    #apparition des coffres
+            mur = Entity(
+                model='cube',
+                scale=(taille_case, 12, 0.1),
+                position=(x * taille_case, 1.5, y * taille_case + decalage),
+                texture='brick',
+                color=color.orange,
+                collider='box',
+                enabled=False
+            )
+            maze_entities.append(mur)
+
+        # coffre
         if (x, y) in positions_des_coffres:
-            Entity(
-                model='assets/coffre/low_poly_treasure_chest.glb', 
-                scale=0.02, 
-                color=color.gold, 
-                position=(x * taille_case, 0.1, y * taille_case), 
-                collider='box'
-                )
+            coffre = Entity(
+                model='assets/coffre/low_poly_treasure_chest.glb',
+                scale=0.02,
+                color=color.gold,
+                position=(x * taille_case, 0.1, y * taille_case),
+                collider='box',
+                enabled=False
+            )
+            maze_entities.append(coffre)
 
 # PARAMETRES DU JOUEUR
 
@@ -180,6 +208,186 @@ arm = Entity(
     rotation=(10, -20, 5),
     scale=(-0.009, 0.009, 0.009)
 )
+
+maze_entities.append(arm)
+
+# CINEMATIQUE
+
+ground1 = Entity(
+    model='plane',
+    scale=(200, 1,200),
+    texture='brick',
+    color=color.dark_gray,
+    collider='box',
+    enabled=False
+)
+
+desk = Entity(
+    model='cube',
+    scale=(3,0.2,1.5),
+    position=(0,1,3),
+    color=color.brown,
+    enabled=False
+)
+
+pc = Entity(
+    model='cube',
+    scale=(1.5,1,0.1),
+    position=(0,2,2.2),
+    color=color.black,
+    enabled=False
+)
+
+chair = Entity(
+    model='cube',
+    scale=(1.5,1,1.5),
+    position=(0,1,3.5),
+    color=color.dark_gray,
+    enabled=False
+)
+
+boy = Entity(position=(0,1,4), enabled=False)
+
+body = Entity(parent=boy, model='cube',
+              scale=(0.6,1,0.3),
+              color=color.azure)
+
+head = Entity(parent=boy, model='sphere',
+              scale=0.5,
+              position=(0,0.9,0),
+              color=color.light_gray)
+
+arm_l = Entity(parent=boy, model='cube',
+               scale=(0.15,0.6,0.15),
+               position=(-0.5,0.2,0),
+               color=color.azure)
+
+arm_r = Entity(parent=boy, model='cube',
+               scale=(0.15,0.6,0.15),
+               position=(0.5,0.2,0),
+               color=color.azure)
+
+leg_l = Entity(parent=boy, model='cube',
+               scale=(0.2,0.8,0.2),
+               position=(-0.2,-0.8,0),
+               color=color.dark_gray)
+
+leg_r = Entity(parent=boy, model='cube',
+               scale=(0.2,0.8,0.2),
+               position=(0.2,-0.8,0),
+               color=color.dark_gray)
+
+PointLight(position=(0,5,0), enabled=False)
+
+cinematic = False
+glitch_strength = 0
+
+text_ui = Text(
+    '',
+    position=(-0.5,-0.4),
+    scale=1.5,
+    background=True,
+    color=color.white
+)
+
+def say(msg, t=2):
+    text_ui.text = msg
+    invoke(lambda: setattr(text_ui, "text", ""), delay=t)
+
+
+def camera_shake(intensity):
+    camera.x += random.uniform(-intensity, intensity)
+    camera.y += random.uniform(-intensity, intensity)
+
+
+def start_cinematic():
+    global cinematic
+
+    cinematic = True
+
+    player.enabled = False
+    mouse.locked = False
+    ground.enabled = False
+    arm.enabled = False
+
+    desk.enabled = True
+    pc.enabled = True
+    chair.enabled = True
+    boy.enabled = True
+    ground1.enabled = True
+
+    camera.parent = scene
+    camera.position = boy.world_position + Vec3(3,2,6)
+    camera.look_at(boy)
+
+    say("Garçon: Juste… une dernière partie...", 2)
+
+    invoke(step_2, delay=2)
+
+
+def step_2():
+    say("SYSTEM: Connexion instable...", 2)
+
+    camera.animate_position(
+        pc.world_position + Vec3(2,2,2),
+        duration=2
+    )
+
+    invoke(step_3, delay=2)
+
+
+def step_3():
+    global glitch_strength
+
+    say("SYSTEM: SYNCHRONISATION...", 2)
+
+    window.color = color.rgb(10,10,20)
+
+    pc.color = color.cyan
+    glitch_strength = 0.3
+
+    camera.animate_position(
+        pc.world_position + Vec3(0,0.5,0.8),
+        duration=2
+    )
+
+    camera.animate_rotation(
+        Vec3(10,180,0),
+        duration=2
+    )
+
+    boy.animate_scale(0.1, duration=2)
+    boy.animate_y(boy.y + 2, duration=2)
+
+    arm_l.animate_rotation_z(90, duration=2)
+    arm_r.animate_rotation_z(-90, duration=2)
+
+    invoke(step_4, delay=2.2)
+
+
+def step_4():
+    global cinematic, cinematic_done
+
+    desk.disable()
+    pc.disable()
+    chair.disable()
+    boy.disable()
+    ground1.disable()
+
+    camera.parent = player
+    camera.position = (0,1.6,0)
+
+    player.enabled = True
+    mouse.locked = True
+    arm.enabled = True
+
+    cinematic = False
+    cinematic_done = True
+
+    for e in maze_entities:
+        e.enabled = True
+
+    ground.enabled = True
 
 # MINI MAP
 
@@ -442,6 +650,10 @@ volume_slider = Slider(
 
 game_active = False
 
+cinematic = False
+cinematic_done = False
+glitch_strength = 0
+
 height = 30
 width = 40
 
@@ -563,14 +775,20 @@ def start_game():
     main_menu.enabled = False
     options_menu_ui.enabled = False
 
-    player.enabled = True
-    mouse.locked = True
-    stamina_bar.enabled = True
-    ground.enabled = True
-
-    musique_menu.volume = 0
-
     game_active = True
+
+    if cinematic_done:
+        player.enabled = True
+        mouse.locked = True
+        arm.enabled = True
+        stamina_bar.enabled = True
+
+        for e in maze_entities:
+            e.enabled = True
+
+        ground.enabled = True
+    else:
+        start_cinematic()
 
 
 def quit_game():
@@ -760,10 +978,9 @@ def move_with_collision(entity, direction, speed):
         dx = future_pos.x - chest_pos.x
         dz = future_pos.z - chest_pos.z
 
-        if (dx * dx + dz * dz) < 0.8 * 0.8:
+        if (dx * dx + dz * dz) < 0.8 * 0.8 and player.y < 3:
             hit_chest = True
             break
-
 
     if (not hit.hit) and (not hit_chest):
         entity.position += step
@@ -876,6 +1093,9 @@ def update():
     arm.rotation = lerp(arm.rotation, final_rot, time.dt * 10)
 
     player_dot.position = world_to_minimap(player.x, player.z)
+
+    if cinematic and glitch_strength > 0:
+        camera_shake(glitch_strength)
 
     update_stamina_bar()
 

@@ -7,7 +7,17 @@ import os
 import math
 import time
 
-app = Ursina()
+app = Ursina(
+    title = "Pyromaniac's Labyrinth : GOTY Edition/Director's Cut",
+    icon = 'assets/icon.ico'
+    )
+
+window.borderless = False
+window.fps_counter.enabled = False
+window.exit_button.visible = False
+window.fullscreen = True
+window.entity_counter.enabled = False
+window.collider_counter.enabled = False
 
 # MAP CONFIG
 
@@ -122,7 +132,7 @@ decalage = taille_case / 2
 for y in range(15):
     for x in range(15):
 
-        # mur extérieur gauche
+        # mur exterieur gauche
         if x == 0:
             mur = Entity(
                 model='cube',
@@ -135,7 +145,7 @@ for y in range(15):
             )
             maze_entities.append(mur)
 
-        # mur extérieur haut
+        # mur exterieur haut
         if y == 0:
             mur = Entity(
                 model='cube',
@@ -394,13 +404,13 @@ def step_4():
 minimap = Entity(
     parent=camera.ui,
     model='quad',
-    scale=(0.25, 0.25),
-    position=(0.75, 0.38),
+    scale=(0.5, 0.5),
+    position=(0.65, 0.28),
     color=color.black66
 )
 
-mini_offset = Vec2(-0.125, -0.125)
-mini_scale = 0.25 / (10 * taille_case)
+mini_offset = Vec2(-0.35, -0.35)
+mini_scale = 0.25 / (5 * taille_case)
 
 def world_to_minimap(x, y):
     return Vec2(
@@ -420,13 +430,20 @@ for y in range(15):
                 y * taille_case
             )
 
-            mini_murs.append(Entity(
-                parent=minimap,
-                model='quad',
-                color=color.gray,
-                scale=0.01,
-                position=pos
-            ))
+            mini_murs.append(Text(text=' | ',
+                                  parent=minimap,
+                                  position=pos,
+                                  ))
+        else:
+            pos = world_to_minimap(
+                x * taille_case + decalage,
+                y * taille_case
+            )
+
+            mini_murs.append(Text(text='   ',
+                                  parent=minimap,
+                                  position=pos,
+                                  ))
 
         # murs horizontaux
         if mur_horizontaux[y][x] == 1:
@@ -435,13 +452,20 @@ for y in range(15):
                 y * taille_case + decalage
             )
 
-            mini_murs.append(Entity(
-                parent=minimap,
-                model='quad',
-                color=color.gray,
-                scale=0.01,
-                position=pos
-            ))
+            mini_murs.append(Text(text='---+',
+                                  parent=minimap,
+                                  position=pos,
+                                  ))
+        else:
+            pos = world_to_minimap(
+                x * taille_case,
+                y * taille_case + decalage
+            )
+
+            mini_murs.append(Text(text='   +',
+                                  parent=minimap,
+                                  position=pos,
+                                  ))
 
 mini_coffres = []
 
@@ -456,11 +480,12 @@ for (x, y) in positions_des_coffres:
         position=pos
     ))
 
+
 player_dot = Entity(
     parent=minimap,
     model='circle',
     color=color.red,
-    scale=0.05,
+    scale=0.015,
     position=(0, 0)
 )
 
@@ -576,7 +601,7 @@ main_background = Entity(
 )
 
 title = Text(
-    text="Pyromaniac's Labyrinth : GOTY Edition/Diractor's Cut",
+    text="Pyromaniac's Labyrinth : GOTY Edition/Director's Cut",
     parent=main_menu,
     y=0.3,
     scale=2.5,
@@ -809,6 +834,7 @@ def return_to_main_menu():
 
     player.enabled = False
     mouse.locked = False
+    
 
 
 def open_audio_menu():

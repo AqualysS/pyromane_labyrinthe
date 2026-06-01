@@ -1,3 +1,4 @@
+from email.mime import base
 from ursina import *
 from ursina.prefabs.first_person_controller import *
 import random
@@ -15,7 +16,7 @@ app = Ursina(
 window.borderless = False
 window.fps_counter.enabled = False
 window.exit_button.visible = False
-window.fullscreen = True
+window.fullscreen = False
 window.entity_counter.enabled = False
 window.collider_counter.enabled = False
 
@@ -132,7 +133,7 @@ decalage = taille_case / 2
 for y in range(15):
     for x in range(15):
 
-        # mur exterieur gauche
+        # mur extérieur gauche
         if x == 0:
             mur = Entity(
                 model='cube',
@@ -145,7 +146,7 @@ for y in range(15):
             )
             maze_entities.append(mur)
 
-        # mur exterieur haut
+        # mur extérieur haut
         if y == 0:
             mur = Entity(
                 model='cube',
@@ -185,16 +186,91 @@ for y in range(15):
             maze_entities.append(mur)
 
         # coffre
-        if (x, y) in positions_des_coffres:
-            coffre = Entity(
-                model='assets/coffre/low_poly_treasure_chest.glb',
-                scale=0.02,
-                color=color.gold,
-                position=(x * taille_case, 0.1, y * taille_case),
-                collider='box',
-                enabled=False
-            )
-            maze_entities.append(coffre)
+
+        coffres = {}
+
+    for y in range(15):
+        for x in range(15):
+
+        # coffre
+            if (x, y) in positions_des_coffres:
+                coffre = Entity(
+                    model='assets/coffre/low_poly_treasure_chest.glb',
+                    scale=0.02,
+                    position=(x * taille_case, 0.1, y * taille_case),
+                    collider='box',
+                    enabled=False
+                )
+
+                coffres[(x, y)] = coffre
+                maze_entities.append(coffre)
+
+# BRIQUET
+
+briquets = 0
+coffres_ouverts = set()
+
+briquet = None
+current_item = 1
+
+def equip_briquet():
+    global briquet
+
+    if briquet:
+        destroy(briquet)
+
+    briquet = Entity(
+        parent=camera,
+        model='assets/briquet/briquet.obj',
+        texture='assets/briquet/briquetcolor.png',
+        position=(0.3, -0.5, 1.5),
+        color=color.white,
+        scale=3,
+        enabled=False
+    )
+
+    if current_item == 2:
+        briquet.enabled = True
+
+def has_briquet():
+    return briquets > 0 and briquet is not None
+
+flame_active = False
+flame_timer = 0
+flame_held = False
+fire_particles = []
+fire_emitting = False
+
+flame_light = PointLight(color=color.orange, intensity=0, enabled=False)
+
+flame = Entity(
+    parent=camera,
+    model='quad',
+    texture='circle',
+    color=color.orange,
+    scale=0.15,
+    position=(0.3, -0.5, 1.5),
+    enabled=False,
+    billboard=True
+)
+
+charge_circle = Entity(
+    parent=camera.ui,
+    model='circle',
+    color=color.rgba(255, 200, 0, 150),
+    scale=0.15,
+    enabled=False
+)
+
+# QUETES 
+
+quest_text = Text(
+    text="Briquets: 0 / 4",
+    parent=camera.ui,
+    position=(-0.85, 0.45),
+    scale=1.5,
+    color=color.white
+)
 
 # PARAMETRES DU JOUEUR
 
@@ -601,7 +677,7 @@ main_background = Entity(
 )
 
 title = Text(
-    text="Pyromaniac's Labyrinth : GOTY Edition/Director's Cut",
+    text="Pyromaniac's Labyrinth : GOTY Edition/Diractor's Cut",
     parent=main_menu,
     y=0.3,
     scale=2.5,
@@ -678,6 +754,13 @@ game_active = False
 cinematic = False
 cinematic_done = False
 glitch_strength = 0
+
+quest_briquets = 0
+
+charge_active = False
+charge_timer = 0
+
+game_won = False
 
 height = 30
 width = 40
@@ -792,6 +875,26 @@ def setup_controls_menu():
 load_settings()
 setup_controls_menu()
 
+# SWITCH OBJET
+
+def switch_item(slot):
+    global current_item
+
+    if slot == 2 and not has_briquet():
+        return
+
+    current_item = slot
+
+    if current_item == 1:
+        if briquet:
+            briquet.enabled = False
+        arm.enabled = True
+
+    elif current_item == 2:
+        arm.enabled = False
+        if briquet:
+            briquet.enabled = True
+
 # MENU FUNCTIONS (IMPORTANTS)
 
 def start_game():
@@ -834,7 +937,6 @@ def return_to_main_menu():
 
     player.enabled = False
     mouse.locked = False
-    
 
 
 def open_audio_menu():
@@ -851,6 +953,25 @@ def open_controls_menu():
     options_menu_ui.enabled = False
     controles_menu_ui.enabled = True
     mouse.locked = False
+
+# FONCTION VICTOIRE 
+
+def win_game():
+    global game_won, game_active
+
+    game_won = True
+    game_active = False
+
+    player.enabled = False
+    mouse.locked = False
+
+    Text(
+        text="VOUS AVEZ GAGNÉ",
+        parent=camera.ui,
+        scale=3,
+        origin=(0, 0),
+        color=color.gold
+    )
 
 # FONCTION BOUTTONS
 
@@ -917,15 +1038,80 @@ def input(key):
     global ignorer_premiere_entree
     global game_active
 
+    global slap_active, slap_timer
+    global flame_active, flame_timer, flame_held
+    global briquets
+    global charge_active, charge_timer
+    global quest_briquets
+
     if player.enabled and key == controls["jump"] and player.y <= 2:
         player_velocity_y = 8
 
-    global slap_active, slap_timer
-
     if game_active and key == 'left mouse down':
-        slap_active = True
-        slap_timer = 0
-        slap_sound.play()
+
+        if current_item == 2 and has_briquet():
+
+            flame_held = True
+            flame_active = True
+
+            flame.enabled = True
+            flame_light.enabled = True
+
+            flame_timer = 0
+
+            if quest_briquets >= 4:
+                charge_active = True
+                charge_timer = 0
+                charge_circle.enabled = True
+
+        elif current_item != 2:
+            slap_active = True
+            slap_timer = 0
+            slap_sound.play()
+
+    if key == 'left mouse up':
+        flame_held = False
+        flame_active = False
+
+        charge_active = False
+        charge_timer = 0
+        if charge_circle:
+            charge_circle.enabled = False
+
+        flame.enabled = False
+        flame_light.enabled = False
+
+    if key == 'e':
+        for (cx, cy), coffre in coffres.items():
+
+            if (cx, cy) in coffres_ouverts:
+                continue
+
+            dist = distance(
+                player.position,
+                Vec3(cx * taille_case, player.y, cy * taille_case)
+            )
+
+            if dist < 3:
+                coffres_ouverts.add((cx, cy))
+                coffre.disable()
+
+                briquets += 1
+
+                quest_briquets += 1
+                quest_text.text = f"Briquets: {quest_briquets} / 4"
+
+                print("Briquet obtenu !")
+                print("Nombre de briquets :", briquets)
+
+                equip_briquet()
+                break
+
+    if key == '1':
+        switch_item(1)
+
+    if key == '2':
+        switch_item(2)
 
     if rebinding_action is not None:
         action_name, key_text = rebinding_action
@@ -1014,6 +1200,9 @@ def move_with_collision(entity, direction, speed):
 def update():
     global stamina, player_velocity_y
     global anim_t, slap_timer, slap_active
+    global charge_active, charge_timer, game_won
+
+    global flame_active, flame_timer
 
     stamina = clamp(stamina, 0, 100)
 
@@ -1111,6 +1300,50 @@ def update():
             slap_rot = lerp(-40, 0, t - 1)
         else:
             slap_active = False
+
+    if flame_held and current_item == 2 and has_briquet():
+        flame_timer += time.dt
+
+        flame.enabled = True
+        flame_light.enabled = True
+
+        flame_light.intensity = random.uniform(1, 3)
+        flame_light.position = camera.world_position + camera.forward * 1.5
+
+        flame.x = 0.3 + random.uniform(-0.02, 0.02)
+        flame.y = 0.0 + random.uniform(-0.02, 0.02)
+
+        base = 0.15
+        flame.scale = Vec3(
+            base,
+            base * 1.8 + random.uniform(-0.03, 0.05),
+            base
+        )
+    else:
+        flame.enabled = False
+        flame_light.enabled = False
+
+    if briquet:
+        briquet.position = lerp(
+            briquet.position,
+            Vec3(0.3 + slap_x * 0.2, -0.5, 1.4),
+            time.dt * 10
+        )
+
+        briquet.rotation_z = slap_rot * 0.5
+
+        if briquet:
+            briquet.rotation_x = camera.rotation_x * 0.1
+
+    if charge_active:
+        charge_timer += time.dt
+
+        charge_circle.scale = 0.15 + (charge_timer / 5) * 0.4
+
+        if charge_timer >= 5:
+            charge_active = False
+            charge_circle.enabled = False
+            win_game()
 
     final_pos = target_pos + Vec3(slap_x, 0, 0)
     final_rot = target_rot + Vec3(0, 0, slap_rot)

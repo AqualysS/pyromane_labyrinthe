@@ -272,6 +272,33 @@ quest_text = Text(
     color=color.white
 )
 
+# TEXTE COFFRE
+
+interact_text = Text(
+    text='',
+    parent=scene,
+    scale=1.5,
+    color=color.white,
+)
+interact_text.billboard = True
+
+def get_nearby_chest():
+    closest = None
+    min_dist = 5
+
+    for (cx, cy), coffre in coffres.items():
+        if (cx, cy) in coffres_ouverts:
+            continue
+
+        chest_pos = Vec3(cx * taille_case, 0, cy * taille_case)
+        dist = distance(player.position, chest_pos)
+
+        if dist < min_dist:
+            min_dist = dist
+            closest = (cx, cy, chest_pos)
+
+    return closest
+
 # PARAMETRES DU JOUEUR
 
 x_depart = randint(0, 14)
@@ -756,10 +783,17 @@ volume_slider = Slider(
 # PARAMETRES DU JEU
 
 game_active = False
+start_time = 0
+run_time = 0
+leaderboard_file = "leaderboard.json"
 
 cinematic = False
 cinematic_done = False
 glitch_strength = 0
+
+player_name = ""
+typing_name = False
+name_text = None
 
 quest_briquets = 0
 
@@ -905,9 +939,15 @@ def switch_item(slot):
 
 def start_game():
     global game_active
+    global start_time
+    global typing_name
+
+    start_time = time.time()
 
     main_menu.enabled = False
     options_menu_ui.enabled = False
+    name_panel.enabled = False
+    typing_name = False
 
     game_active = True
 
@@ -1008,8 +1048,12 @@ def spawn_firework(position):
 
 def win_cinematic():
     global game_won
+    global run_time
 
     game_won = True
+
+    run_time = time.time() - start_time
+    save_score(run_time)
 
     mouse.locked = False
 
@@ -1071,6 +1115,123 @@ def show_victory_screen():
             delay=i * 0.25
         )
 
+# TIMER
+
+def save_score(new_time):
+    data = []
+
+    if os.path.exists(leaderboard_file):
+        with open(leaderboard_file, "r") as f:
+            data = json.load(f)
+
+    data.append({
+        "name": player_name if player_name != "" else "Player",
+        "time": round(new_time, 2)
+    })
+
+    data = sorted(data, key=lambda x: x["time"])[:10]
+
+    with open(leaderboard_file, "w") as f:
+        json.dump(data, f, indent=4)
+
+# CLASSMENT
+
+def show_victory_screen():
+    flash = Entity(
+        parent=camera.ui,
+        model='quad',
+        scale=3,
+        color=color.white
+    )
+
+    destroy(flash, delay=1)
+
+    Text(
+        text="PYROMANIAC'S LABYRINTH\nTERMINÉ",
+        parent=camera.ui,
+        scale=3,
+        origin=(0, 0),
+        color=color.black,
+        position=(0, 0.3)
+    )
+
+    if os.path.exists(leaderboard_file):
+        with open(leaderboard_file, "r") as f:
+            data = json.load(f)
+    else:
+        data = []
+
+    leaderboard_text = "🏆 SPEEDRUNS 🏆\n\n"
+
+    for i, entry in enumerate(data):
+        leaderboard_text += f"{i+1}. {entry['name']} - {entry['time']}s\n"
+
+    Text(
+        text=leaderboard_text,
+        parent=camera.ui,
+        scale=1.5,
+        origin=(0, 0),
+        color=color.azure,
+        y=-0.1
+    )
+
+    Sky(color=color.black)
+
+    camera.parent = scene
+    camera.position = (0, 25, -40)
+    camera.look_at(Vec3(0, 25, 0))
+
+    for i in range(40):
+        invoke(
+            spawn_firework,
+            Vec3(
+                random.uniform(-15, 15),
+                random.uniform(15, 35),
+                random.uniform(-5, 5)
+            ),
+            delay=i * 0.25
+        )
+
+# PSEUDO
+
+def ask_player_name():
+    global typing_name, name_text, player_name
+
+    typing_name = True
+    player_name = ""
+    player.enabled = False
+
+    main_menu.enabled = False
+    options_menu_ui.enabled = False
+
+    name_panel.enabled = True
+    mouse.locked = False
+
+name_panel = Entity(parent=camera.ui, enabled=False)
+
+name_bg = Entity(
+    parent=name_panel,
+    model='quad',
+    scale=(0.6, 0.3),
+    color=color.black66
+)
+
+Text(
+    text="Entrez votre pseudo : ",
+    parent=name_panel,
+    position=(-0.25, 0.1),
+    scale=2,
+    color=color.white
+)
+
+name_text = Text(
+    text="",
+    parent=name_panel,
+    position=(-0.25, -0.05),
+    scale=2,
+    color=color.azure
+)
+
 # FONCTION BOUTTONS
 
 def create_button(parent, txt, y, action):
@@ -1119,7 +1280,7 @@ def create_button(parent, txt, y, action):
 
 # CREATION DES BOUTONS
 
-create_button(main_menu, "JOUER", 0.1, start_game)
+create_button(main_menu, "JOUER", 0.1, ask_player_name)
 create_button(main_menu, "OPTIONS", -0.05, open_options)
 create_button(main_menu, "QUITTER", -0.2, quit_game)
 
@@ -1141,6 +1302,22 @@ def input(key):
     global briquets
     global charge_active, charge_timer
     global quest_briquets
+    global player_name, typing_name, name_text
+
+    if typing_name:
+        if key == 'backspace':
+            player_name = player_name[:-1]
+
+        elif key == 'enter':
+            typing_name = False
+            name_panel.enabled = False
+            start_game()
+
+        elif len(key) == 1:
+            player_name += key
+
+        name_text.text = player_name
+        return
 
     if player.enabled and key == controls["jump"] and player.y <= 2:
         player_velocity_y = 8
@@ -1454,6 +1631,17 @@ def update():
 
     if cinematic and glitch_strength > 0:
         camera_shake(glitch_strength)
+
+    near = get_nearby_chest()
+
+    if near:
+        cx, cy, pos = near
+
+        interact_text.text = "E pour ouvrir"
+        interact_text.world_position = pos + Vec3(0, 2, 0)
+        interact_text.enabled = True
+    else:
+        interact_text.enabled = False
 
     update_stamina_bar()
 
